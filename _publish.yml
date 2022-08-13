@@ -1,0 +1,4 @@
+- source: GPFA_math.ipynb
+  quarto-pub:
+    - id: 25e4cb0b-f927-46f5-a1aa-fa2e36fec06e
+      url: 'https://quartopub.org/sites/mone27/gaussian-processes-factor-analysis-math'

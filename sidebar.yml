@@ -1,0 +1,22 @@
+website:
+  sidebar:
+    contents:
+      - index.ipynb
+      - Expectation Maximization.ipynb
+      - GFPA_pyro.ipynb
+      - GPFA_GPyTorch.ipynb
+      - GPFA_backto_drawing_board.html
+      - GPFA_backto_drawing_board.ipynb
+      - GPFA_math.html
+      - GPFA_math.ipynb
+      - Gaussian_Process_Latent_Variable_Model.ipynb
+      - Gaussian_Process_Latent_Variable_Models_with_Stochastic_Variational_Inference.ipynb
+      - KISSGP_Deep_Kernel_Regression_CUDA.ipynb
+      - Meteo_gap_filling_GP.ipynb
+      - Simple_GP_Regression.ipynb
+      - Untitled.ipynb
+      - modelling_overview_GPFA.ipynb
+      - scratchpad.ipynb
+      - section: nbs
+        contents:
+          - nbs/00_GPFA.ipynb
