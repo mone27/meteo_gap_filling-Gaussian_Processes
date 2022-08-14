@@ -2,3 +2,4 @@ website:
   sidebar:
     contents:
       - 00_GPFA.ipynb
+      - 01_Learner.ipynb

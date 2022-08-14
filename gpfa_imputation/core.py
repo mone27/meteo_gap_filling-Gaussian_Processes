@@ -54,7 +54,7 @@ class GPFAKernel(gpytorch.kernels.Kernel):
         if not torch.is_tensor(value):
             value = torch.as_tensor(value).to(self.raw_psi_diag)
         # when setting the paramater, transform the actual value to a raw one by applying the inverse transform
-        self.initialize(raw_length=self.raw_psi_diag_constraint.inverse_transform(value))
+        self.initialize(raw_psi_diag=self.raw_psi_diag_constraint.inverse_transform(value))
     
 
         

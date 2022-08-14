@@ -15,8 +15,8 @@ format:
     toc-depth: 4
 
 website:
-  title: "gpfa-imputation"
-  site-url: "https://mone27.github.io/gpfa-imputation/"
+  title: "gpfa_imputation"
+  site-url: "https://mone27.github.io/gpfa_imputation/"
   description: "Gap filling for meteorological data using gap filling"
   execute: 
     enabled: false
