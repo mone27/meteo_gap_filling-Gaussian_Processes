@@ -6,9 +6,10 @@ __all__ = ['NormParam', 'GPFALearner']
 # %% ../nbs/01_Learner.ipynb 4
 import torch
 from torch import Tensor
+from torch.distributions import MultivariateNormal 
 
 import gpytorch
-from .core import *
+from .gpfa import *
 from collections import namedtuple
 
 from fastcore.foundation import *
@@ -17,9 +18,13 @@ from fastcore.foundation import patch
 
 # %% ../nbs/01_Learner.ipynb 15
 class GPFALearner():
-    def __init__(self, X):
+    def __init__(self,
+                 X: Tensor, # (n_features * n_obs) Multivariate time series
+                 T: Tensor = None # (n_obs) Vector of time of observations.
+                 # If none each observation is considered to be at the same distance
+                ):
         self.prepare_X(X)
-        self.prepare_time(X)
+        if T is None: self.default_time(X)
         
         self.likelihood = gpytorch.likelihoods.GaussianLikelihood()
         latent_kernel = gpytorch.kernels.RBFKernel()
@@ -33,7 +38,7 @@ class GPFALearner():
         self.n_features = X.shape[1]
         
     @torch.no_grad()
-    def prepare_time(self, X):
+    def default_time(self, X):
         self.T = torch.arange(X.shape[0])
         
     
@@ -79,12 +84,12 @@ def predict_raw(self: GPFALearner, T):
 # %% ../nbs/01_Learner.ipynb 32
 NormParam = namedtuple("NormalParameters", ["mean", "std"])
 
-# %% ../nbs/01_Learner.ipynb 33
+# %% ../nbs/01_Learner.ipynb 34
 @torch.no_grad()
 @patch
 def predict(self: GPFALearner, T):
     raw_out = self.predict_raw(T)
-    raw_std = raw_out.stddev.reshape(-1, self.n_features)
+    raw_std = raw_out.stddev.reshape(0, self.n_features)
     raw_mean = raw_out.mean.reshape(-1, self.n_features)
     
     pred_mean = reverse_normalize(raw_mean, self.x_mean, self.x_std)
@@ -92,7 +97,7 @@ def predict(self: GPFALearner, T):
     # detach to avoid that gradients are calculated on results
     return NormParam(pred_mean.detach(), pred_std.detach())
 
-# %% ../nbs/01_Learner.ipynb 54
+# %% ../nbs/01_Learner.ipynb 57
 @patch
 def get_formatted_params(self: GPFALearner):
     return ", ".join([
