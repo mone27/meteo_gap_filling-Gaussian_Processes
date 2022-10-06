@@ -168,7 +168,28 @@ def predict(self: GPFALearner,
     
     return self.prediction_from_raw(pred_merge.mean, pred_merge.std)
 
-# %% ../nbs/01_Learner.ipynb 84
+# %% ../nbs/01_Learner.ipynb 80
+def get_parameter_value(name, param, constraint):
+    if constraint is not None:
+        value = constraint.transform(param.data.detach())
+        name = name.replace("raw_", "") # parameter is not raw anymore
+    else:
+        value = param.data.detach()
+    return (name, value)
+
+# %% ../nbs/01_Learner.ipynb 82
+def tensor_to_first_item(tensor):
+    if tensor.dim() > 0:
+        return tensor_to_first_item(tensor[0])
+    return tensor.item()
+
+
+def format_parameter(name, value):
+    value = tensor_to_first_item(value)
+    name = name.split(".")[-1] # get only last part of name
+    return f"{name}: {value:.3f}"
+
+# %% ../nbs/01_Learner.ipynb 83
 @patch
 def get_formatted_params(self: GPFALearner):
     return ", ".join([
@@ -177,7 +198,7 @@ def get_formatted_params(self: GPFALearner):
         self.model.named_parameters_and_constraints()
     ])
 
-# %% ../nbs/01_Learner.ipynb 87
+# %% ../nbs/01_Learner.ipynb 86
 @patch
 def printer(self: GPFALearner, i_iter):
 
