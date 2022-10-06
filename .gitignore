@@ -1,5 +1,6 @@
 _docs/
 .virtual_documents
+sidebar.yml
 
 *.bak
 .gitattributes
