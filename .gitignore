@@ -1,7 +1,6 @@
 _docs/
 .virtual_documents
 
-
 *.bak
 .gitattributes
 .last_checked
