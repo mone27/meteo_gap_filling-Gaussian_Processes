@@ -3,3 +3,4 @@ website:
     contents:
       - 00_GPFA.ipynb
       - 01_Learner.ipynb
+      - 02_Imputation.ipynb
