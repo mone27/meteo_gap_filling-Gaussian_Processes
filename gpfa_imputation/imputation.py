@@ -25,26 +25,49 @@ class GPFAFakeData:
         self.X =  self.exact_X + torch.normal(0., noise_std, size = (n_obs, n_features)) 
         
 
-# %% ../nbs/02_Imputation.ipynb 31
+# %% ../nbs/02_Imputation.ipynb 45
 class GPFAImputation:
     def __init__(
         self,
-        data: pd.DataFrame , #observed data with gaps due to missing data. Columns "T" is the time
-        T # vector of time where the data is observed + data is missing
+        data: pd.DataFrame , #observed data with missing data as NA
     ):
         self.data = data
+        self.T = torch.arange(0, len(data), dtype=torch.float32) # time is encoded with a increase of 1
         
-        self.learner = GPFALearner(torch.tensor(self.data.drop("T", axis=1).to_numpy()), torch.tensor(self.data["T"].to_numpy()))
+        # Training data
+        self.train_idx = ~self.data.isna().any(1)
+        self.train_data = torch.tensor(self.data[self.train_idx].to_numpy())
+        self.train_T = self.T[self.train_idx]
+        
+        self.learner = GPFALearner(X = self.train_data, T = self.train_T)
 
-        self.T = T
+        # Prediction data
+        self.pred_T = self.T[~self.train_idx]
+        self.cond_idx = torch.tensor(~self.data[~self.train_idx].isna().to_numpy().flatten()) # conditional obsevations
+        self.cond_obs = torch.tensor(self.data[~self.train_idx].to_numpy().flatten()[self.cond_idx])
         
-    def predict(self,
-               tidy = True, # return prediction in tidy format or raw prediction
+        
+    def impute(self,
+               add_time = True, # add column with time?
+               tidy = True # tidy data?
                ):
         self.learner.train()
-        self.pred = self.learner.predict(self.T)
+        self.pred = self.learner.predict(self.pred_T, obs = self.cond_obs, idx = self.cond_idx)
         
-        self._tidy_pred() if tidy else self.pred
+        imp_data = self.data.copy()
+        
+        for col_name in imp_data.columns:
+            imp_data[~self.train_idx, col_name] = self.pred.mean
+            imp_data[~self.train_idx, col_name + "_std"] = self.pred.std
+        
+        idx_vars = []
+        if add_time:
+            imp_data["time"] = self.T
+            idx_vars.append("time")
+        
+        
+        
+        #self._tidy_pred() if tidy else self.pred
         
     def _tidy_pred(self):
         """ transform the pred output into a tidy dataframe suitable for plotting"""

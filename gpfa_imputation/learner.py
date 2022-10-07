@@ -129,6 +129,48 @@ def prediction_from_raw(self: GPFALearner, raw_mean, raw_std):
     #remove pytorch gradients
     return NormParam(pred_mean.detach(), pred_std.detach())
 
+# %% ../nbs/01_Learner.ipynb 54
+def conditional_guassian(gauss: MultivariateNormal,
+                         obs,
+                         idx # Boolean tensor specifying for each variable is observed (True) or not (False)
+                        ):
+    μ = gauss.mean
+    Σ = gauss.covariance_matrix
+    # check idx same size of mu
+    μ_x = μ[~idx]
+    μ_o = μ[idx]
+    
+    Σ_xx = Σ[~idx,:][:, ~idx]
+    Σ_xo = Σ[~idx,:][:, idx]
+    Σ_ox = Σ[idx,:][:, ~idx]
+    Σ_oo = Σ[idx,:][:, idx]
+    
+    Σ_oo_inv = torch.linalg.inv(Σ_oo)
+    
+    mean = μ_x + Σ_xo@Σ_oo_inv@(obs - μ_o)
+    cov = Σ_xx - Σ_xo@Σ_oo_inv@Σ_ox
+    
+    return MultivariateNormal(mean, cov)
+    
+
+# %% ../nbs/01_Learner.ipynb 59
+def _merge_raw_cond_pred(pred_raw,
+                         pred_cond,
+                         obs,
+                         idx
+                        ) -> NormParam:
+    """This functions merges a complete predition with a conditional prediction and the observations.
+    For the observations the std is considered to be 0 """
+    mean = torch.zeros_like(pred_raw.mean) # get shape from complete prediction
+    mean[~idx] = pred_cond.mean # add predictions
+    mean[idx] = obs # add observations
+    
+    std = torch.zeros_like(pred_raw.stddev)
+    std[~idx] = pred_cond.stddev
+    std[idx] = 0 # there is no uncertainty as it's an oberservation
+    
+    return NormParam(mean, std)
+
 # %% ../nbs/01_Learner.ipynb 65
 @patch
 def _normalize_obs(self: GPFALearner,
@@ -152,12 +194,12 @@ def predict(self: GPFALearner,
             # ((n_pred*n_features)) Optional - necessary if obs are present
             # Boolean array that is True where an observation is present and False where a prediction is needed
             # This is a 1D array with the length equal to n_pred (number time steps to predict) times n_features
-            idx_obs: Tensor = None
+            idx: Tensor = None
            ):
     pred_raw = self.predict_raw(T)
     
     # Conditional observations
-    if obs is not None and idx_obs is not None:
+    if obs is not None and idx is not None:
         # observations needs to be normalized before can be used with the raw prediction!
         obs_norm = self._normalize_obs(obs, idx)
         pred_cond = conditional_guassian(pred_raw, obs_norm, idx)
