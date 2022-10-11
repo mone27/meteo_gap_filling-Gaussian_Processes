@@ -54,29 +54,37 @@ class GPFAImputation:
         self.learner.train()
         self.pred = self.learner.predict(self.pred_T, obs = self.cond_obs, idx = self.cond_idx)
         
-        imp_data = self.data.copy()
+        if tidy: return self._impute_tidy(add_time)
+        else: return self._impute_wide(add_time)
         
-        for col_name in imp_data.columns:
-            imp_data[~self.train_idx, col_name] = self.pred.mean
-            imp_data[~self.train_idx, col_name + "_std"] = self.pred.std
+        
+    def _impute_wide(self, add_time):
+        """ Impute in wide format"""
+        
+        imp_data = self.data.copy()
+        for col_idx, col_name in enumerate(imp_data.columns):
+            imp_data.loc[~self.train_idx, col_name] = self.pred.mean[:, col_idx].numpy()
+            imp_data.loc[~self.train_idx, col_name + "_std"] = self.pred.std[:, col_idx].numpy()
         
         idx_vars = []
         if add_time:
             imp_data["time"] = self.T
             idx_vars.append("time")
         
-        
-        
-        #self._tidy_pred() if tidy else self.pred
-        
-    def _tidy_pred(self):
+        return imp_data 
+    
+    def _impute_tidy(self, add_time):
         """ transform the pred output into a tidy dataframe suitable for plotting"""
-        feature_names = self.data.columns.drop("T")
+        feature_names = self.data.columns
 
-        pred_mean = pd.DataFrame(self.pred.mean, columns = feature_names).assign(T = self.T).melt("T", value_name="mean")
-        pred_std = pd.DataFrame(self.pred.std, columns = feature_names).assign(T = self.T).melt("T", value_name="std")
+        pred_mean = pd.DataFrame(self.pred.mean, columns = feature_names).assign(time = self.pred_T).melt("time", value_name="mean")
+        pred_std = pd.DataFrame(self.pred.std, columns = feature_names).assign(time = self.pred_T).melt("time", value_name="std")
         
-        pred = pd.merge(pred_mean, pred_std, on=['T', 'variable'])        
+        pred = pd.merge(pred_mean, pred_std, on=['time', 'variable'])  
+        
+        train_data = self.data[self.train_idx].assign(time = self.train_T).melt("time", value_name = "mean")
+               
+        pred = pd.concat((train_data, pred))
         
         self.pred_tidy = pred 
         return pred 
